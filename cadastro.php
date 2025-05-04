@@ -7,6 +7,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     // Recebe os dados do formulário
     $nome = $_POST['nome'];
     $email = $_POST['email'];
+    $cpf = $_POST['cpf'];
     $senha = $_POST['senha'];
     $data_nascimento = $_POST['data_nascimento'];
     $genero = $_POST['genero'];
@@ -20,7 +21,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
     // Prepara a inserção dos dados no banco, VERIFICAR QUAL O NOME CORRETO DA TABELA NO BANCO
     $stmt = $conexao->prepare("
-        INSERT INTO usuarios (nome, email, senha, data_nascimento, genero, cep, cidade, bairro, estado)
+        INSERT INTO cadastro_usuario (nome, email, senha, data_nascimento, genero, cep, cidade, bairro, estado)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     ");
     
