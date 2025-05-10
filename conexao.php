@@ -7,7 +7,7 @@ $senha =  "sua_senha";
 $dbname = "seu_banco_de_dados"; //Nome do banco de dados
 
 // Cria a conexão
-$conn = new mysqli($servername, $, $senha, $dbname);
+$conn = new mysqli($servername, $usuario, $senha, $dbname);
 
 // Verifica a conexão
 if ($conn->connect_error) {

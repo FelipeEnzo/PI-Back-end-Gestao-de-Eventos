@@ -1,47 +1,9 @@
 <?php
-// Verificar a sessão do usuário
-require ("verifica_sessao.php");
+// Verificar a sessão do usuário FAZER ISSO DEPOIS
+//require ("verifica_sessao.php");
 
 // Conecta ao banco de dados
 include("conexao.php");
-
-// Consultar os eventos com status "pendente" OBS: VERIFICAR QUAL O NOME CORRETO DOS ATRIBUTOS NO BANCO
-// OBS: A tabela cadastro_evento também deve conter o atributo status_evento
-$sql = "SELECT id_evento, nome, descricao, imagem FROM cadastro_evento WHERE status_evento = 'pendente'";
-$result_evento = mysqli_query($conn, $sql);
-
-// Verifica se há eventos pendentes
-if (mysqli_num_rows($result_evento) > 0) {
-    // Percorre os eventos
-    while ($evento = mysqli_fetch_assoc($result_evento)) {
-        // Insere as informações do evento no HTML
-        ?>
-        <div class="background_validação">
-            <div class="validação_imagem">
-                <h2><?php echo htmlspecialchars($evento['nome']); ?></h2>
-                <picture>
-                    <img src="<?php echo htmlspecialchars($evento['imagem']); ?>" alt="IMAGEM DO EVENTO">
-                </picture>
-            </div>
-
-            <div class="validação_texto">
-                <p>
-                    <?php echo nl2br(htmlspecialchars($evento['descricao'])); ?>
-                </p>
-
-                <div class="opções">
-                    <span class="aprovar" data-id="<?php echo $evento['id_evento']; ?>">APROVAR</span>
-                    <span class="rejeitar" data-id="<?php echo $evento['id_evento']; ?>">REJEITAR</span>
-                </div>
-            </div>
-        </div>
-
-        <?php
-    }
-} else {
-    echo "Não há eventos com aprovação pendente.";
-}
-
 
 // Verifica o método POST e se $_POST "id_evento" e "acao" estão definidos
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["id_evento"], $_POST["acao"])) {
@@ -53,12 +15,115 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST["id_evento"], $_POST["a
     // Verifica a ação
     if ($input_acao == "APROVADO" || $input_acao == "NEGADO") {
         // Atualiza a tabela cadastro_evento com prepared statements 
-        $sql = "UPDATE cadastro_evento SET status_evento = ? WHERE id_evento = ?";
+        $sql = "UPDATE aprovacao_evento SET status_aprovacao = ? WHERE id_evento = ?";
         
-        $stmt = mysqli_prepare($conn, $sql);
-        mysqli_stmt_bind_param($stmt, "si", $input_acao, $input_id_evento);
-        mysqli_stmt_execute($stmt);
+        $stmt = $conexao->prepare($sql);
+        $stmt->bindValue(1, $input_acao, PDO::PARAM_STR);
+        $stmt->bindValue(2, $input_id_evento, PDO::PARAM_STR);
+        $stmt->execute();
+        
+        // Constrói o HTML
+        ?>
+        <div class="input_texto">
+                <h3> <?php echo "EVENTO $input_acao"?> </h3>
 
-        echo "EVENTO $input_acao!";
+                <?php
+                // HTML do input
+                if ($input_acao == "APROVADO") {
+                    ?>
+                    <picture> 
+                        <img src="style/img/certinho.png" alt="Aprovado">
+                    </picture>
+                    <?php
+                } else if ($input_acao == "NEGADO") {
+                    ?>
+                    <picture>
+                        <img src="style/img/rejeitado.png" alt="Negado">
+                    <?php
+                }
+                ?>
+        </div>
+        <?php
     }
 }
+
+// Consultar os eventos com status "pendente" utilizando JOIN para unir as tabelas OBS: VERIFICAR QUAL O NOME CORRETO DOS ATRIBUTOS NO BANCO
+$sql = "SELECT c.id_evento, c.nome, c.descricao, c.imagem FROM cadastro_evento c
+JOIN aprovacao_evento a ON c.id_evento = a.id_evento 
+WHERE a.status_aprovacao = 'PENDENTE'";
+
+$stmt = $conexao->prepare($sql);
+$stmt->execute();
+$result_evento = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+
+// HEAD e BODY do HTML
+?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>INDEX</title>
+    <link rel="stylesheet" href="style/style.css">
+    <script async src="scrypt/code.js"></script>
+</head>
+<body class="principal">
+
+
+    <header>
+
+    <picture class="logo" onclick="mostrar_menu()">
+        <a href="index.html">
+            <img class="logo_img" src="style/img/Logo.png" alt="LOGO DO SITE">
+        </a>
+    </picture>
+
+
+    </header>
+    <main>
+
+        <div class="validação_titulo">
+            <h1>
+                Eventos Pendentes de Validação
+            </h1>
+        </div>
+
+        <div>
+            <?php // Verifica se há eventos pendentes
+            if (count($result_evento) > 0) {
+                // Percorre os eventos
+                foreach ($result_evento as $evento) {
+                    // Insere as informações do evento no HTML
+                    ?>
+                    <div class="background_validação" id="evento_<?php echo $evento['id_evento']; ?>">
+                        <div class="validação_imagem">
+                            <h2><?php echo htmlspecialchars($evento['nome']); ?></h2>
+                            <picture>
+                                <img src="<?php echo htmlspecialchars($evento['imagem']); ?>" alt="IMAGEM DO EVENTO">
+                            </picture>
+                        </div>
+
+                        <div class="validação_texto">
+                            <p>
+                                <?php echo nl2br(htmlspecialchars($evento['descricao'])); ?>
+                            </p>
+
+                            <div class="opções">
+                                <button class="aprovar" onclick="aprovar('<?php echo $evento['id_evento']; ?>')" data-id="<?php echo $evento['id_evento']; ?>">APROVAR</button>
+                                <button class="rejeitar" onclick="rejeitar('<?php echo $evento['id_evento']; ?>')" data-id="<?php echo $evento['id_evento']; ?>">REJEITAR</button>
+                            </div>
+                        </div>
+                    </div>
+                    <?php
+                }
+            } else {
+                ?>
+                <p>Não há eventos com aprovação pendente.</p>
+                <?php
+            }
+            ?>
+        </div>
+    </main>    
+</body>
+</html>
